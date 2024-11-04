@@ -2,6 +2,10 @@
 
 ## Dev Setup
 
+Before you get started:
+- Make sure you've installed postgres, pnpm, node.js
+
+
 From root:
 
 - Create local postgres database, set name to be `connections_test` and port to `5432` (the default).
