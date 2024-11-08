@@ -13,7 +13,7 @@ import { AppTextarea } from "@/components/ui/Textarea";
 import { ProfileImage } from "@/components/ui/ProfileImage";
 import { CursiveLogo } from "@/components/ui/HeaderCover";
 import { logClientEvent } from "@/lib/frontend/metrics";
-import { tensionPairs } from "@/common/constants";
+import { tensionPairs, GO_DEEPER_DETAILED_MAPPING } from "@/common/constants";
 import { hashCommit } from "@/lib/psi/hash";
 import { BASE_API_URL } from "@/config";
 import Link from "next/link";
@@ -106,14 +106,14 @@ const CommentModal: React.FC<CommentModalProps> = ({
               </AppButton>
             </div>
           )}
-          <span className="text-center text-xs text-tertiary text-gray-400 font-medium font-sans">
+          <span className="text-center text-xs text-label-tertiary font-medium font-sans">
             Add details to remember this connection. <br />
             They stay <strong className="font-bold">private to you.</strong>
           </span>
         </div>
 
         <div className="flex flex-col gap-3 mt-4">
-          <span className="text-sm font-semibold text-primary text-white font-sans">
+          <span className="text-sm font-semibold text-label-primary font-sans">
             Labels
           </span>
           <div className="flex space-x-2 justify-around">
@@ -177,9 +177,14 @@ const UserProfilePage: React.FC = () => {
   const [showCommentModal, setShowCommentModal] = useState(false);
   const [refreshLoading, setRefreshLoading] = useState(false);
   const [waitingForOtherUser, setWaitingForOtherUser] = useState(false);
+  const [waitingForOtherUserDeeper, setWaitingForOtherUserDeeper] = useState(false);
   const [verifiedIntersection, setVerifiedIntersection] = useState<{
     tensions: string[];
     contacts: string[];
+    goDeeper: string[];
+  } | null>(null);
+  const [verifiedIntersectionDeeper, setVerifiedIntersectionDeeper] = useState<{
+    goDeeper: string[];
   } | null>(null);
 
   useEffect(() => {
@@ -247,7 +252,7 @@ const UserProfilePage: React.FC = () => {
   const handleSubmitComment = async (emoji: string | null, note: string) => {
     logClientEvent("user-profile-comment-modal-saved", {
       label: emoji,
-      privateNoteSet: note !== "",
+      privateNoteSet: note !== "", 
     });
     if (!connection) return;
 
@@ -279,7 +284,7 @@ const UserProfilePage: React.FC = () => {
     }
   };
 
-  const updatePSIOverlap = async () => {
+  const updatePSIOverlapIcebreaker = async () => {
     setRefreshLoading(true);
     if (!connection || !user) {
       setRefreshLoading(false);
@@ -308,6 +313,8 @@ const UserProfilePage: React.FC = () => {
         contactData
       );
 
+      let journeys: string[] = [];
+
       const [secretHash] = await hashCommit(
         user.encryptionPrivateKey,
         connection.user.encryptionPublicKey,
@@ -315,7 +322,7 @@ const UserProfilePage: React.FC = () => {
       );
 
       const response = await fetch(
-        `${BASE_API_URL}/user/refresh_intersection`,
+        `${BASE_API_URL}/user/refresh_intersection_icebreaker`,
         {
           method: "POST",
           headers: {
@@ -324,7 +331,7 @@ const UserProfilePage: React.FC = () => {
           body: JSON.stringify({
             secretHash,
             index: user.userData.username < connection.user.username ? 0 : 1,
-            intersectionState: { tensions, contacts },
+            intersectionState: { tensions, contacts, journeys },
           }),
         }
       );
@@ -350,6 +357,7 @@ const UserProfilePage: React.FC = () => {
         setVerifiedIntersection({
           contacts: translatedContacts,
           tensions: data.verifiedIntersectionState.tensions,
+          goDeeper: [],
         });
         logClientEvent("user-finished-psi", {});
         if (!waitingForOtherUser) {
@@ -379,6 +387,100 @@ const UserProfilePage: React.FC = () => {
       setRefreshLoading(false);
     }
   };
+
+  const updatePSIOverlapGoDeeper = async () => {
+    setRefreshLoading(true);
+    if (!connection || !user) {
+      setRefreshLoading(false);
+      return;
+    }
+
+    try {   
+      const tensions: string[] = []
+      const contacts: string[] = []
+      let journeys: string[] = [];
+      let journeysData: string[] = [];
+      if (user.userData.journeys) {
+        journeysData = Object.keys(user.userData.journeys).filter((k) => user.userData.journeys![k as keyof typeof user.userData.journeys] === true) as string[];
+        journeys = await hashCommit(
+          user.encryptionPrivateKey,
+          connection.user.encryptionPublicKey,
+          journeysData
+        ); 
+      }
+
+      const [secretHash] = await hashCommit(
+        user.encryptionPrivateKey,
+        connection.user.encryptionPublicKey,
+        [""]
+      );
+
+      const response = await fetch(
+        `${BASE_API_URL}/user/refresh_intersection_go_deeper`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            secretHash,
+            index: user.userData.username < connection.user.username ? 0 : 1,
+            intersectionState: { tensions, contacts, journeys },
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`HTTP error! status: ${errorData.error}`);
+      }
+
+      const dataDeeper = await response.json();
+
+      if (dataDeeper.success) {
+
+        const translatedGoDeeper = [];
+        for (const hashJourney of dataDeeper.verifiedIntersectionState.journeys) {
+          const index = journeys.findIndex(
+            (journey) => journey === hashJourney
+          );
+          if (index !== -1) {
+            translatedGoDeeper.push(journeysData[index]);
+          }
+        }
+
+        setVerifiedIntersectionDeeper({
+          goDeeper: translatedGoDeeper,
+        });
+        logClientEvent("user-finished-psi", {});
+        if (!waitingForOtherUserDeeper) {
+          toast.info(
+            `Ask ${connection.user.username} to refresh to see results!`
+          );
+        }
+        setWaitingForOtherUserDeeper(false);
+      } else {
+        toast.info(
+          `Ask ${connection.user.username} to press "Discover" after tapping!`
+        );
+        setWaitingForOtherUserDeeper(true);
+      }
+    } catch (error) {
+      console.error("Error updating PSI overlap:", error);
+      toast(
+        SupportToast(
+          "",
+          true,
+          "Failed to update overlap. Please try again",
+          ERROR_SUPPORT_CONTACT,
+          errorToString(error)
+        )
+      );
+    } finally {
+      setRefreshLoading(false);
+    }
+  };
+
 
   if (!connection || !user || !session) {
     return (
@@ -414,9 +516,12 @@ const UserProfilePage: React.FC = () => {
           <div className="flex flex-col w-full">
             <div className="flex items-center justify-between w-full pb-4">
               <div className="flex flex-col gap-1 pt-4">
-                <span className="text-[30px] font-semibold tracking-[-0.22px] font-sans leading-none text-primary dark:text-white">{`${connection?.user?.username}`}</span>
-                <span className="text-sm font-medium font-sans text-tertiary dark:text-gray-400 leading-none">
+                <span className="text-[30px] font-semibold tracking-[-0.22px] font-sans leading-none text-label-primary">{`${connection?.user?.username}`}</span>
+                <span className="text-sm font-medium font-sans text-label-tertiary leading-none">
                   {connection?.user?.displayName}
+                </span>
+                <span className="text-sm font-medium font-sans text-label-tertiary leading-none">
+                  {connection?.user?.pronouns}
                 </span>
               </div>
               <ProfileImage user={connection.user} />
@@ -557,7 +662,7 @@ const UserProfilePage: React.FC = () => {
             <AppButton
               onClick={() => {
                 logClientEvent("user-started-psi", {});
-                updatePSIOverlap();
+                updatePSIOverlapIcebreaker();
               }}
               variant="outline"
               loading={refreshLoading}
@@ -570,6 +675,61 @@ const UserProfilePage: React.FC = () => {
             {waitingForOtherUser && (
               <div className="text-[12px] text-center text-primary font-sans font-normal">
                 Waiting for {connection.user.username} to press discover after
+                tapping...
+              </div>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-4 py-4 px-4">
+            <span className="text-sm font-semibold text-primary font-sans">
+              Do you want to dive deeper into this connection?{" "}
+              <span className="font-normal text-tertiary">
+                Find out if you share similar mental health 
+                and/or neurodivergent journeys.
+              </span>
+            </span>
+
+            {verifiedIntersectionDeeper && (
+              <>
+                <div className="px-2 pt-2 pb-4 bg-white rounded-lg border border-black/80 flex-col justify-start items-start gap-2 inline-flex">
+                  <div className="text-sm font-semibold text-primary font-sans">
+                    Shared journeys
+                  </div>
+                  {verifiedIntersectionDeeper.goDeeper?.length === 0 ? (
+                    <div className="text-sm text-primary font-sans font-normal">
+                      No common journeys.
+                    </div>
+                  ) : (
+                    <div className="text-sm text-link-primary font-sans font-normal">
+                      {verifiedIntersectionDeeper.goDeeper.map((journey, index) => (
+                        <>
+                          <span className="text-primary">
+                            {index !== 0 && " | "}
+                          </span>{GO_DEEPER_DETAILED_MAPPING[journey]}
+                        </>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+
+            <AppButton
+              onClick={() => {
+                logClientEvent("user-started-psi", {});
+                updatePSIOverlapGoDeeper();
+              }}
+              variant="outline"
+              loading={refreshLoading}
+            >
+              {verifiedIntersectionDeeper || waitingForOtherUser
+                ? "Refresh"
+                : "Go Deeper"}
+              {}
+            </AppButton>
+            {waitingForOtherUser && (
+              <div className="text-[12px] text-center text-primary font-sans font-normal">
+                Waiting for {connection.user.username} to press Go Deeper after
                 tapping...
               </div>
             )}

@@ -41,21 +41,21 @@ export function Leaderboard({
 
   return (
     <div>
-      <div className="px-4 py-2 bg-black items-center justify-between items-start inline-flex w-full">
-        <div className="grid grid-cols-[40px_1fr_1fr] justify-start items-start gap-3 flex w-full">
-          <div className="text-white/40 text-xs text-center font-medium leading-[140%]">
+      <div className="px-4 py-2 bg-background  justify-between items-start inline-flex w-full">
+        <div className="grid grid-cols-[40px_1fr_1fr] justify-start items-start gap-3 w-full">
+          <div className="text-label-tertiary text-xs text-center font-medium leading-[140%]">
             #
           </div>
-          <div className="text-white/40 text-xs font-medium leading-[140%]">
+          <div className="text-label-tertiary text-xs font-medium leading-[140%]">
             User name
           </div>
-          <div className="text-right text-white/40 text-xs font-medium leading-[140%]">
+          <div className="text-right text-label-tertiary text-xs font-medium leading-[140%]">
             Entry
           </div>
         </div>
       </div>
 
-      {leaderboardEntries.entries.map((entry: LeaderboardEntry, index) => {
+      {leaderboardEntries?.entries?.map((entry: LeaderboardEntry, index) => {
         let position = index + 1;
 
         // Handle ties
@@ -71,16 +71,16 @@ export function Leaderboard({
         lastEntryValue = entry.entryValue;
 
         const styling = {
-          positionColor: "bg-white/20",
+          positionColor: "bg-background/20",
           positionTextColor: "",
-          fontStyling: "text-white/60 text-[14px] font-normal",
+          fontStyling: "text-label-secondary text-[14px] font-normal",
           divider: false,
         };
 
         const adjustedIndex = prize ? index - cursiveCount : index;
 
         if (adjustedIndex > markedRank - 1) {
-          styling.fontStyling = "text-white/40 text-[14px] font-normal";
+          styling.fontStyling = "text-label-tertiary text-[14px] font-normal";
         }
         if (adjustedIndex === markedRank - 1 && !dividerSet) {
           styling.divider = true;
@@ -94,18 +94,18 @@ export function Leaderboard({
         const entryValue = entry.entryValue;
 
         if (position == 1) {
-          styling.positionColor = "bg-white";
-          styling.positionTextColor = "text-black";
-          styling.fontStyling = "text-white text-[16px] font-medium";
+          styling.positionColor = "bg-background";
+          styling.positionTextColor = "text-label-primary";
+          styling.fontStyling = "text-label-secondary text-[16px] font-medium";
         }
 
         if (entry.username == leaderboardDetails.username) {
           styling.positionColor = "bg-[#FF9DF8]";
-          styling.positionTextColor = "text-black";
-          styling.fontStyling = "text-white text-[16px] font-medium";
+          styling.positionTextColor = "text-label-primary";
+          styling.fontStyling = "text-label-primary text-[16px] font-medium";
           username += " (me)";
 
-          if (leaderboardDetails.userPosition != tiedPosition) {
+          if (leaderboardDetails?.userPosition != tiedPosition) {
             // Update position if you're tied with another user
             leaderboardDetails.username = entry.username;
             leaderboardDetails.userPosition = tiedPosition;
@@ -120,20 +120,20 @@ export function Leaderboard({
                   className={`w-10 h-6 px-1 py-2 ${styling.positionColor} rounded-[67px] justify-center items-center gap-2 flex`}
                 >
                   <div
-                    className={`text-center ${styling.positionTextColor} text-sm font-medium leading-[140%]`}
+                    className={`text-center text-label-primary ${styling.positionTextColor}  text-sm font-medium leading-[140%]`}
                   >
                     {position}
                   </div>
                 </div>
                 <div
-                  className={`flex flex-row grow shrink basis-0 ${styling.fontStyling} leading-[140%]`}
+                  className={`flex flex-row grow shrink basis-0 text-label-secondary ${styling.fontStyling} leading-[140%]`}
                 >
                   {username}
                   {prize && RING_USERNAMES.includes(username) && <>{" 💍"}</>}
                 </div>
                 <div className="justify-start items-start gap-[5px] flex">
                   <div
-                    className={`text-right ${styling.fontStyling} font-['DM Sans'] leading-[140%]`}
+                    className={`text-right text-label-secondary ${styling.fontStyling} font-sans leading-[140%]`}
                   >
                     {Number.isInteger(entryValue)
                       ? entryValue

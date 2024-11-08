@@ -26,6 +26,7 @@ import { cn } from "@/lib/frontend/util";
 import { IoIosArrowBack as BackIcon } from "react-icons/io";
 import { SupportToast } from "@/components/ui/SupportToast";
 import { ERROR_SUPPORT_CONTACT } from "@/constants";
+import { zxcvbn } from "@zxcvbn-ts/core";
 
 enum DisplayState {
   ENTER_EMAIL,
@@ -52,14 +53,6 @@ const Register: React.FC = () => {
   const [bio, setBio] = useState("");
   const [telegramHandle, setTelegramHandle] = useState("");
   const [twitterHandle, setTwitterHandle] = useState("");
-
-  // Halloween change, remove afterwards
-  useEffect(() => {
-    const removeHWClass = async () =>{
-      document.getElementsByTagName('body')[0].classList.remove('halloween-theme');
-    };
-    removeHWClass();
-  });
 
   useEffect(() => {
     const loadSavedTap = async () => {
@@ -179,6 +172,17 @@ const Register: React.FC = () => {
   };
 
   const handleRegisterWithPassword = async (password: string) => {
+    // Check password strength
+    const passwordCheck = zxcvbn(password);
+
+    // 3 # safely unguessable: moderate protection from offline slow-hash scenario. (guesses < 10^10) (https://github.com/dropbox/zxcvbn/blob/master/README.md)
+    if (passwordCheck && passwordCheck.score < 3) {
+      toast.error(
+        "Weak password, try adding numbers, symbols, and using less common words."
+      );
+      return;
+    }
+
     logClientEvent("register-register-with-password", {});
     await handleCreateAccount(password, false, undefined);
   };
@@ -310,13 +314,15 @@ const Register: React.FC = () => {
         >
           <button
             type="button"
-            className="flex items-center gap-1 text-primary"
+            className="flex items-center gap-1 text-label-primary"
             onClick={() => {
               onGoBack?.();
             }}
           >
             <BackIcon />
-            <span className="text-sm font-normal text-primary">{"Back"}</span>
+            <span className="text-sm font-normal text-label-primary">
+              {"Back"}
+            </span>
           </button>
         </div>
       )}

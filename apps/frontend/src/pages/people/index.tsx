@@ -6,8 +6,10 @@ import AppLayout from "@/layouts/AppLayout";
 import { MdKeyboardArrowRight as ArrowRight } from "react-icons/md";
 import { ProfileImage } from "@/components/ui/ProfileImage";
 import { Banner } from "@/components/cards/Banner";
+import useSettings from "@/hooks/useSettings";
 
 const PeoplePage: React.FC = () => {
+  const { darkTheme } = useSettings();
   const [connections, setConnections] = useState<Record<string, Connection>>(
     {}
   );
@@ -37,7 +39,7 @@ const PeoplePage: React.FC = () => {
       seoTitle="People"
       header={
         <>
-          <span className="text-primary font-medium">People</span>
+          <span className="text-label-primary font-medium">People</span>
           <div
             className="absolute left-0 right-0 bottom-0 h-[2px]"
             style={{
@@ -71,18 +73,24 @@ const PeoplePage: React.FC = () => {
         />
       </div>
       {Object.keys(connections).length === 0 ? (
-        <div className="p-4 text-center text-secondary px-16">
+        <div className="p-4 text-center text-label-secondary px-16">
           {`No connections yet.`}
         </div>
       ) : (
         <ul className="flex flex-col">
-          {Object.values(connections).map((connection) => (
+          {Object.values(connections).map((connection, index) => (
             <li
               key={connection.user.username}
               className="p-4"
               style={{
+                borderTop:
+                  index === 0 && darkTheme
+                    ? "0.5px solid rgba(255, 255, 255, 0.20)"
+                    : "0.5px solid rgba(0, 0, 0, 0.20)",
                 // for some reason tailwind not applying
-                borderBottom: "0.5px solid rgba(0, 0, 0, 0.20)",
+                borderBottom: darkTheme
+                  ? "0.5px solid rgba(255, 255, 255, 0.20)"
+                  : "0.5px solid rgba(0, 0, 0, 0.20)",
               }}
             >
               <Link
@@ -92,10 +100,10 @@ const PeoplePage: React.FC = () => {
                 <div className="flex items-center gap-4">
                   <ProfileImage user={connection.user} />
                   <div className="flex flex-col gap-1">
-                    <span className="text-sm font-medium text-primary">
+                    <span className="text-sm font-medium text-label-primary">
                       {connection.user.displayName}
                     </span>
-                    <span className="text-xs text-secondary font-medium">
+                    <span className="text-xs text-label-secondary font-medium">
                       @{connection.user.username}
                     </span>
                   </div>

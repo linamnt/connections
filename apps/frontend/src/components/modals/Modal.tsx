@@ -77,19 +77,21 @@ const Modal = ({
                     >
                       {withBackButton ? (
                         <div className="flex items-center gap-1">
-                          <Icons.ArrowLeft className="text-white" />
-                          <span className="text-primary font-sans text-sm">
+                          <Icons.ArrowLeft className="text-icon-primary" />
+                          <span className="text-label-primary font-sans text-sm">
                             Back
                           </span>
                         </div>
                       ) : (
-                        <Icons.Close size={20} className="text-white" />
+                        <Icons.Close size={20} className="text-icon-primary" />
                       )}
                     </button>
                   </div>
                 )}
                 <div className="flex flex-col grow h-full overflow-y-auto mt-8 z-100">
-                  <div className="pt-4 pb-6 grow text-white">{children}</div>
+                  <div className="pt-4 pb-6 grow text-label-primary">
+                    {children}
+                  </div>
                 </div>
               </DialogPanel>
             </TransitionChild>

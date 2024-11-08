@@ -62,6 +62,11 @@ export default function CommunityPage() {
     useState<LeaderboardDetails | null>(null);
   const [lannaTotalWorkoutEntries, setLannaTotalWorkoutEntries] =
     useState<LeaderboardEntries | null>(null);
+  const [weekNov4TapLeaderboardDetails, setWeekNov4TapLeaderboardDetails] =
+    useState<LeaderboardDetails | null>(null);
+  const [weekNov4TapLeaderboardEntries, setWeekNov4TapLeaderboardEntries] =
+    useState<LeaderboardEntries | null>(null);
+
   const [cardProps, setCardProps] = useState<CommunityCardProps[]>([]);
   const [displayedDashboard, setDisplayedDashboard] =
     useState<DisplayedDashboard>(DisplayedDashboard.NONE);
@@ -77,7 +82,8 @@ export default function CommunityPage() {
       }
       setUser(user);
 
-      const communityIssuer: ChipIssuer = user.chips[0].issuer;
+      // Currently will only be EDGE_CITY_LANNA
+      const communityIssuer: ChipIssuer = ChipIssuer.EDGE_CITY_LANNA;
 
       let details: LeaderboardDetails | null = null;
       let entries: LeaderboardEntries | null = null;
@@ -91,6 +97,8 @@ export default function CommunityPage() {
       let weekOct27TapEntries: LeaderboardEntries | null = null;
       let lannaTotalWorkoutDetails: LeaderboardDetails | null = null;
       let lannaTotalWorkoutEntries: LeaderboardEntries | null = null;
+      let weekNov4TapDetails: LeaderboardDetails | null = null;
+      let weekNov4TapEntries: LeaderboardEntries | null = null;
       try {
         details = await getUserLeaderboardDetails(
           communityIssuer,
@@ -140,6 +148,14 @@ export default function CommunityPage() {
           communityIssuer,
           LeaderboardEntryType.LANNA_TOTAL_WORKOUT_COUNT
         );
+        weekNov4TapDetails = await getUserLeaderboardDetails(
+          communityIssuer,
+          LeaderboardEntryType.WEEK_NOV_4_TAP_COUNT
+        );
+        weekNov4TapEntries = await getTopLeaderboardEntries(
+          communityIssuer,
+          LeaderboardEntryType.WEEK_NOV_4_TAP_COUNT
+        );
       } catch (error) {
         console.error("Error getting user leaderboard info:", error);
         toast.error("Error getting user leaderboard info.");
@@ -158,7 +174,9 @@ export default function CommunityPage() {
         !weekOct27TapDetails ||
         !weekOct27TapEntries ||
         !lannaTotalWorkoutDetails ||
-        !lannaTotalWorkoutEntries
+        !lannaTotalWorkoutEntries ||
+        !weekNov4TapDetails ||
+        !weekNov4TapEntries
       ) {
         toast.error("User leaderboard info not found.");
         router.push("/profile");
@@ -177,20 +195,22 @@ export default function CommunityPage() {
       setWeekOct27TapLeaderboardEntries(weekOct27TapEntries);
       setLannaTotalWorkoutDetails(lannaTotalWorkoutDetails);
       setLannaTotalWorkoutEntries(lannaTotalWorkoutEntries);
+      setWeekNov4TapLeaderboardDetails(weekNov4TapDetails);
+      setWeekNov4TapLeaderboardEntries(weekNov4TapEntries);
 
       const props: CommunityCardProps[] = [
         {
           image: "/images/week.png",
-          title: "Social Graph, Week of 10/27 💍",
-          description: `${weekOct27TapDetails.totalValue} of 500 taps`,
+          title: "Social Graph, Week of Nov 4 💍",
+          description: `${weekNov4TapDetails.totalValue} of 500 taps`,
           type: "active",
-          position: weekOct27TapDetails.userPosition,
-          totalContributors: weekOct27TapDetails.totalContributors,
+          position: weekNov4TapDetails.userPosition,
+          totalContributors: weekNov4TapDetails.totalContributors,
           progressPercentage: Math.min(
             100,
-            Math.round((weekOct27TapDetails.totalValue / 500) * 100)
+            Math.round((weekNov4TapDetails.totalValue / 500) * 100)
           ),
-          dashboard: DisplayedDashboard.WEEKLY_TAPS_OCT_27,
+          dashboard: DisplayedDashboard.WEEKLY_TAPS_NOV_4,
         },
         {
           image: "/images/runclub.png",
@@ -245,6 +265,20 @@ export default function CommunityPage() {
             Math.round((details.totalValue / 2000) * 100)
           ),
           dashboard: DisplayedDashboard.TOTAL,
+        },
+        {
+          image: "/images/week.png",
+          title: "Social Graph, Week of 10/27 💍",
+          description: `${weekOct27TapDetails.totalValue} of 500 taps`,
+          type: "active",
+          position: weekOct27TapDetails.userPosition,
+          totalContributors: weekOct27TapDetails.totalContributors,
+          progressPercentage: Math.min(
+            100,
+            Math.round((weekOct27TapDetails.totalValue / 500) * 100)
+          ),
+          dashboard: DisplayedDashboard.WEEKLY_TAPS_OCT_27,
+          past: true,
         },
         {
           image: "/images/week.png",
@@ -396,6 +430,44 @@ export default function CommunityPage() {
   }
 
   if (
+    weekNov4TapLeaderboardDetails &&
+    weekNov4TapLeaderboardEntries &&
+    displayedDashboard === DisplayedDashboard.WEEKLY_TAPS_NOV_4
+  ) {
+    return (
+      <DashboardDetail
+        image="/images/week-wide.png"
+        title="Social Graph, Week of 11/4"
+        description={
+          <div className="flex flex-col gap-4">
+            <span>
+              Weekly tapping challenge to grow the Lanna Social Graph.{" "}
+              <b>
+                The top 5 contributors will win an exclusive Cursive NFC ring!
+              </b>
+            </span>
+            <span>
+              Make sure your tapping is natural, we want to incentive evangelism
+              of the app experience and genuine connection. Not just tapping for
+              the sake of tapping.
+            </span>
+          </div>
+        }
+        leaderboardDetails={weekNov4TapLeaderboardDetails}
+        leaderboardEntries={weekNov4TapLeaderboardEntries}
+        goal={500}
+        unit="tap"
+        organizer="Cursive"
+        organizerDescription="Cryptography for human connection"
+        type="active"
+        returnToHome={() => setDisplayedDashboard(DisplayedDashboard.NONE)}
+        prize={true}
+        prizeRank={5}
+      />
+    );
+  }
+
+  if (
     leaderboardDetails &&
     leaderboardEntries &&
     displayedDashboard === DisplayedDashboard.TOTAL
@@ -499,7 +571,7 @@ export default function CommunityPage() {
       <AppLayout
         header={
           <>
-            <span className="text-primary font-medium">Community</span>
+            <span className="text-label-primary font-medium">Community</span>
             <div
               className="absolute left-0 right-0 bottom-0 h-[2px]"
               style={{
@@ -510,7 +582,7 @@ export default function CommunityPage() {
         }
       >
         <div className="flex flex-col py-4">
-          <span className="text-base font-bold text-primary font-sans">
+          <span className="text-base font-bold text-label-primary font-sans">
             {`Applications`}
           </span>
           <div className="flex  overflow-x-scroll gap-2 pt-2">
@@ -522,7 +594,7 @@ export default function CommunityPage() {
               },
               {
                 href: "https://app.sola.day/event/edgecitylanna/",
-                emoji: <Icons.SocialLayer size={18}/>,
+                emoji: <Icons.SocialLayer size={18} />,
                 text: "Social Layer",
                 label: "community-social-layer-link",
               },
@@ -537,7 +609,7 @@ export default function CommunityPage() {
                 emoji: <span className="text-[16px]">∈</span>,
                 text: "Edges",
                 label: "community-edges-link",
-              }
+              },
             ].map((item, index) => (
               <Link
                 key={index}
@@ -548,7 +620,7 @@ export default function CommunityPage() {
                 <Tag
                   emoji={item.emoji}
                   variant="gray"
-                  text={(item?.text) ? item.text : ""}
+                  text={item?.text ? item.text : ""}
                   external
                 />
               </Link>
@@ -563,7 +635,7 @@ export default function CommunityPage() {
         ) : (
           <div className="flex flex-col gap-6 pt-2 pb-6">
             <div className="flex flex-col gap-2">
-              <span className="text-base font-bold text-primary font-sans">
+              <span className="text-base font-bold text-label-primary font-sans">
                 {`Current dashboards`}
               </span>
               {cardProps?.map((prop: CommunityCardProps, index) => {
@@ -596,7 +668,7 @@ export default function CommunityPage() {
               })}
             </div>
             <div className="flex flex-col gap-2">
-              <span className="text-base font-bold text-primary font-sans">
+              <span className="text-base font-bold text-label-primary font-sans">
                 {`Past dashboards`}
               </span>
               {cardProps?.map((prop: CommunityCardProps, index) => {

@@ -4,22 +4,32 @@ import { storage } from "@/lib/storage";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { tensionPairs } from "@/common/constants";
+import { GO_DEEPER_DETAILED_MAPPING } from "@/common/constants";
+import { GoDeeperSchema } from "@/lib/storage/types/user/userData/lannaData";
 import { logClientEvent } from "@/lib/frontend/metrics";
 import { SupportToast } from "@/components/ui/SupportToast";
 import { errorToString } from "@types";
 import { ERROR_SUPPORT_CONTACT } from "@/constants";
 import { cn } from "@/lib/frontend/util";
 import useSettings from "@/hooks/useSettings";
+import { z, ZodObject } from "zod";
 
-export default function TensionsPage() {
+export default function GoDeeperPage() {
   const router = useRouter();
-  const [sliderValues, setSliderValues] = useState<number[]>(
-    tensionPairs.map(() => 50)
-  );
-  const [revealAnswers, setRevealAnswers] = useState(false);
-  const [contributeAnonymously, setContributeAnonymously] = useState(false);
   const [loading, setLoading] = useState(false);
+  type GoDeeper = z.infer<typeof GoDeeperSchema>;
+  const [journeys, setjourneys] = useState<GoDeeper>({
+    adhd: false,
+    asd: false,
+    bipolar: false,
+    depression: false,
+    eatingDisorder: false,
+    generalizedAnxiety: false,
+    ocd: false,
+    ptsd: false,
+    schizophrenia: false,
+    personalityDisorder: false,
+  });
 
   useEffect(() => {
     const checkUser = async () => {
@@ -30,38 +40,27 @@ export default function TensionsPage() {
         return;
       }
 
-      if (user.userData.tensionsRating) {
-        setSliderValues(
-          user.userData.tensionsRating.tensionRating ??
-            tensionPairs.map(() => 50)
-        );
-        setRevealAnswers(user.userData.tensionsRating.revealAnswers ?? false);
-        setContributeAnonymously(
-          user.userData.tensionsRating.contributeAnonymously ?? false
-        );
+      if (user.userData.journeys) {
+        setjourneys({
+          ...journeys,
+          ...user.userData.journeys
+        });
       }
     };
 
     checkUser();
   }, [router]);
-
-  const handleSliderChange = (index: number, value: number) => {
-    setSliderValues((prevValues) => {
-      const newValues = [...prevValues];
-      newValues[index] = value;
-      return newValues;
-    });
-
-    console.log(sliderValues);
+  const handleCheckboxChange = (journey: keyof GoDeeper) => {
+    setjourneys((prevState) => ({
+      ...prevState,
+      [journey]: !prevState[journey]
+    }));
   };
+
 
   const handleSave = async () => {
     setLoading(true);
 
-    // Implement save functionality here
-    console.log("Reveal answers:", revealAnswers);
-    console.log("Contribute anonymously:", contributeAnonymously);
-    // You can add logic to save these preferences to your backend or local storage
 
     const user = await storage.getUser();
     if (!user) {
@@ -73,16 +72,12 @@ export default function TensionsPage() {
     try {
       await storage.updateUserData({
         ...user.userData,
-        tensionsRating: {
-          tensionRating: sliderValues,
-          revealAnswers,
-          contributeAnonymously,
-        },
+        journeys: journeys,
       });
 
-      logClientEvent("submit_tensions", {});
+      logClientEvent("submit_journeys", {});
 
-      toast.success("Tensions saved successfully!");
+      toast.success("journeys saved successfully!");
       router.push("/profile");
     } catch (error) {
       console.error(error);
@@ -90,7 +85,7 @@ export default function TensionsPage() {
         SupportToast(
           "",
           true,
-          "Failed to save tensions. Please try again",
+          "Failed to save journeys. Please try again",
           ERROR_SUPPORT_CONTACT,
           errorToString(error)
         )
@@ -109,48 +104,27 @@ export default function TensionsPage() {
       <div className="flex flex-col p-4 gap-4">
         <div className="flex flex-col gap-2">
           <span className="text-[14px] font-semibold text-label-primary">
-            Tensions
+          Go Deeper
           </span>
           <span className="text-[14px] font-normal text-label-tertiary">
-            Practice your decision making skills by playing the Tensions game
-            and <b>match with residents who hold opposing views upon tapping</b>{" "}
-            to learn new perspectives.
+          Find your community among others who share your mental health 
+          and/or neurodivergent journeys, creating genuine bonds in a private, 
+          supportive environment.
           </span>
         </div>
         <div className="flex flex-col gap-4">
-          {tensionPairs.map((pair, index) => (
-            <TensionSlider
-              key={index}
-              leftOption={pair[0]}
-              rightOption={pair[1]}
-              value={sliderValues[index]}
-              onChange={(value) => handleSliderChange(index, value)}
+        {Object.keys(journeys).map((journey) => (
+        <div key={journey}>
+          <label>
+            <input
+              type="checkbox"
+              checked={journeys[journey as keyof GoDeeper]}
+              onChange={() => handleCheckboxChange(journey as keyof GoDeeper)}
             />
-          ))}
+            {GO_DEEPER_DETAILED_MAPPING[journey]}
+          </label>
         </div>
-        <div className="flex flex-col gap-4 mt-4">
-          <label className="flex items-start gap-2">
-            <input
-              type="checkbox"
-              checked={revealAnswers}
-              onChange={(e) => setRevealAnswers(e.target.checked)}
-              className="form-checkbox h-5 w-5 text-label-primary"
-            />
-            <span className="text-sm text-label-primary">
-              Match with residents who hold opposing views upon tapping.
-            </span>
-          </label>
-          <label className="flex items-start gap-2">
-            <input
-              type="checkbox"
-              checked={contributeAnonymously}
-              onChange={(e) => setContributeAnonymously(e.target.checked)}
-              className="form-checkbox h-5 w-5 text-label-primary"
-            />
-            <span className="text-sm text-label-primary">
-              Anonymously contribute my answers to community dashboards.
-            </span>
-          </label>
+      ))}
         </div>
         <AppButton
           type="button"

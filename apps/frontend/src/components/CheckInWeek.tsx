@@ -22,14 +22,14 @@ export const CheckInWeek = ({
 
   return (
     <div className="flex flex-col gap-2 w-full ">
-      <h2 className="text-base text-primary font-bold pt-2">{label}</h2>
+      <h2 className="text-base text-label-primary font-bold pt-2">{label}</h2>
       <div className="flex justify-between items-center text-4xl">
         <b>{checkInCount}</b>
       </div>
       <div className="flex flex-col gap-4 pb-4 mt-2">
         <div className="flex items-center">
-          <Icons.Calendar className="text-quaternary" />
-          <span className="text-xs font-bold text-quaternary ml-2">
+          <Icons.Calendar className="text-label-quaternary" />
+          <span className="text-xs font-bold text-label-quaternary ml-2">
             This week
           </span>
         </div>
@@ -41,7 +41,9 @@ export const CheckInWeek = ({
               <button
                 key={day.abbr}
                 className={`min-w-10 h-6 py-2 rounded-full flex items-center justify-center text-sm font-medium ${
-                  isActive ? "bg-black text-white" : "bg-black/20 text-white"
+                  isActive
+                    ? "bg-background text-label-primary"
+                    : "bg-background/20 text-label-primary"
                 }`}
                 aria-label={day.full}
               >
